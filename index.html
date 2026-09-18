@@ -690,8 +690,8 @@
 
         function safeNum(val) { if (val === null || val === undefined) return 0; let cleanStr = val.toString().replace(/\./g, ""); let parsed = parseFloat(cleanStr.replace(/[^0-9-]+/g, "")); return isNaN(parsed) ? 0 : parsed; }
 
-        const SUPABASE_URL = "https://mfxdrozdnwhlvirevnuk.supabase.co"; 
-        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1meGRyb3pkbndobHZpcmV2bnVrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk3NTkwNzIsImV4cCI6MjEwNTMzNTA3Mn0.txYO0pC2VXpxwWQxUDMykHJspm4G4qD_TfoyA1D23Hs";
+        const SUPABASE_URL = "https://gznkzicqdoewotatyprz.supabase.co"; 
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd6bmt6aWNxZG9ld290YXR5cHJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc2NzgzNTMsImV4cCI6MjEwMzI1NDM1M30.k_o2xGTOWlbUI2Zz5zD4LAVRykWhxvyEJ5PXBO_eoxE";
         const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         let db = { comptes: [], transactions: [], dettes_hc: [], transactions_hc: [], boutique_employes: [], boutique_historique: [] };

@@ -257,6 +257,19 @@
             .sidebar-overlay.open { display: block; }
             .modal-large, .modal-65 { max-width: 90vw !important; }
         }
+        /* Masqué par défaut */
+.admin-action { display: none !important; }
+
+/* Affiché uniquement si le body possède la classe 'is-admin' */
+body.is-admin .admin-action { display: block !important; }
+body.is-admin th.admin-action, 
+body.is-admin td.admin-action { display: table-cell !important; }
+
+/* Flexbox vertical pour l'espace décision */
+body.is-admin #adminCircleContainer { 
+    display: flex !important; 
+    flex-direction: column !important; 
+}
         @media (max-width: 640px) {
             .main-content { padding: 16px; }
             .topbar { padding: 0 16px; }
@@ -640,6 +653,16 @@
                 await actualiserInterface(); switchPage('dashboard');
             } catch (err) { if (!navigator.onLine) alert("Hors ligne."); else alert("Erreur réseau."); } 
             finally { submitBtn.innerText = "Accéder aux Coffres"; submitBtn.disabled = false; }
+            if (currentRole === 'admin') { 
+        document.getElementById('session-user-role').innerText = "Directeur"; 
+        document.body.classList.add('is-admin'); // ✅ Active le mode admin sur tout le document
+    } else { 
+        document.getElementById('session-user-role').innerText = "Agent"; 
+        document.body.classList.remove('is-admin'); // ❌ Désactive le mode admin
+    }
+
+    // Appeler ensuite l'actualisation des données/tableaux
+    actualiserInterface();
         }
         function switchPage(pageId) {
             document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active')); document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
@@ -970,40 +993,66 @@
         }
 
         function ouvrirModalCloture(compteId) {
-            const compte = db.comptes.find(c => c.id === compteId);
-            if (!compte) return;
-            const stats = calculerStatsCompte(compteId);
-            let soldeRendu = stats.totalDepots - stats.totalPrets - safeNum(compte.montant_initial);
-            let fraisCarteHtml = "";
-            if (!compte.carte_payee) {
-                soldeRendu -= 1000;
-                fraisCarteHtml = `<div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>Frais Carte non payée :</span> <strong style="color:var(--rouge-dette);">- 1000 FC</strong></div>`;
-            }
-            document.getElementById('modalTitle').innerText = "Clôturer le compte";
-            document.getElementById('modalBody').innerHTML = `
-                <div style="background: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 8px; margin-bottom: 15px; font-size: 14px; border: 1px solid var(--border-couleur);">
-                    <div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>Prénom :</span> <strong style="color:var(--texte-blanc);">${compte.prenom}</strong></div>
-                    <div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>Nom :</span> <strong style="color:var(--texte-blanc);">${compte.nom}</strong></div>
-                    <div style="display:flex; justify-content:space-between; margin-bottom:10px;"><span>Adresse :</span> <strong style="color:var(--texte-blanc);">${compte.adresse}</strong></div>
-                    <hr style="border-color:var(--border-couleur); margin:10px 0;">
-                    <div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>Total Entrée :</span> <strong style="color:var(--vert-finance);">${stats.totalDepots.toLocaleString('de-DE')} FC</strong></div>
-                    <div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>Total Dette :</span> <strong style="color:var(--rouge-dette);">${stats.totalPrets.toLocaleString('de-DE')} FC</strong></div>
-                    ${fraisCarteHtml}
-                    <hr style="border-color:var(--border-couleur); margin:10px 0;">
-                    <div style="display:flex; justify-content:space-between; font-size:16px;"><span>Total Rendu :</span> <strong style="color:${soldeRendu >= 0 ? 'var(--vert-finance)' : 'var(--rouge-dette)'};">${soldeRendu.toLocaleString('de-DE')} FC</strong></div>
-                </div>
-                <p style="color:var(--rouge-dette); text-align: center; font-weight: bold;">Confirmez-vous la mise à la corbeille de ce compte ?</p>
-            `;
-            let btn = document.getElementById('modalConfirmBtn');
-            btn.style.display = 'block'; btn.style.backgroundColor = "var(--vert-finance)"; btn.innerText = "Valider l'opération";
-            btn.onclick = async () => {
-                btnEnTraitement();
-                const { error } = await executeMutation('comptes', 'update', { statut: 'corbeille' }, 'id', compteId);
-                if(error) { btnPret(); alert("Erreur : " + error.message); } 
-                else { fermerModal(); fermerCarteModal(); await actualiserInterface(); }
-            };
-            document.getElementById('actionModal').style.display = 'flex';
+    const compte = db.comptes.find(c => c.id === compteId);
+    if (!compte) return;
+    
+    const stats = calculerStatsCompte(compteId);
+    let soldeRendu = stats.totalDepots - stats.totalPrets - safeNum(compte.montant_initial);
+    if (!compte.carte_payee) { soldeRendu -= 1000; }
+
+    const dateAujourdhui = new Date().toISOString().split('T')[0];
+
+    document.getElementById('modalTitle').innerText = `Clôturer le compte de ${compte.prenom} ${compte.nom}`;
+    document.getElementById('modalBody').innerHTML = `
+        <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid var(--rouge-dette); padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+            <p style="color: var(--rouge-dette); font-weight: bold; margin-bottom: 8px;"><i class="fa-solid fa-triangle-exclamation"></i> Confirmation de clôture</p>
+            <p style="font-size: 13px; color: var(--texte-blanc);">Voulez-vous vraiment clôturer ce compte et le transférer vers la corbeille ?</p>
+            <hr style="border: 0; border-top: 1px solid var(--border-couleur); margin: 10px 0;">
+            <p style="font-size: 14px;"><strong>Solde final à rendre au client :</strong> <span style="color: var(--vert-finance); font-weight: bold;">${soldeRendu.toLocaleString('de-DE')} FC</span></p>
+        </div>
+        <div class="form-group">
+            <label>Date de sortie / clôture du compte</label>
+            <input type="date" id="clotureDateSortie" value="${dateAujourdhui}" required>
+        </div>
+    `;
+
+    let btn = document.getElementById('modalConfirmBtn');
+    btn.style.display = 'block';
+    btn.style.backgroundColor = "var(--rouge-dette)";
+    btn.innerText = "Clôturer le compte";
+
+    btn.onclick = async () => {
+        let dateSortieInput = document.getElementById('clotureDateSortie').value;
+        if (!dateSortieInput) {
+            return alert("Veuillez sélectionner une date de sortie valide.");
         }
+
+        btnEnTraitement();
+
+        // Enregistre le statut en corbeille et la date de sortie dans la table 'comptes'
+        const { error } = await executeMutation(
+            'comptes',
+            'update',
+            { 
+                statut: 'corbeille', 
+                date_sortie: dateSortieInput 
+            },
+            'id',
+            compteId
+        );
+
+        if (error) {
+            btnPret();
+            alert("Erreur lors de la clôture : " + error.message);
+        } else {
+            showNotification("Compte clôturé et déplacé dans la corbeille.", "success");
+            fermerModal();
+            await actualiserInterface();
+        }
+    };
+
+    document.getElementById('actionModal').style.display = 'flex';
+}
 
         function ouvrirCarteModal(compteId) { selectedCompteId = compteId; chargerCartePhysique(compteId); document.getElementById('cardModal').style.display = 'flex'; }
         function fermerCarteModal(e) {
@@ -1385,33 +1434,37 @@
             tbody.appendChild(paginationRow);
         }
 
-        function renderCorbeille() {
-            const tbody = document.getElementById('table-corbeille-body'); 
-            if (!tbody) return;
-            tbody.innerHTML = "";
-            let comptesCorbeille = db.comptes.filter(c => c.statut === 'corbeille').sort((a, b) => (b.date || '').localeCompare(a.date || '') || b.id - a.id);
-            if (comptesCorbeille.length === 0) { tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding: 20px; color:var(--texte-gris);">Aucun compte dans la corbeille.</td></tr>`; return; }
-            comptesCorbeille.forEach(c => {
-                let stats = calculerStatsCompte(c.id);
-                let soldeFinal = stats.totalDepots - stats.totalPrets - safeNum(c.montant_initial) - (c.carte_payee ? 0 : 1000);
-                let tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${c.date || '-'}</td>
-                    <td style="color:var(--texte-blanc); font-weight:bold;">${c.prenom} ${c.nom} (${genererIdentifiantClient(c.id)})</td>
-                    <td>${c.adresse}</td>
-                    <td>${safeNum(c.montant_initial).toLocaleString('de-DE')} FC</td>
-                    <td class="val-depot">+ ${stats.totalDepots.toLocaleString('de-DE')} FC</td>
-                    <td class="val-dette">- ${stats.totalPrets.toLocaleString('de-DE')} FC</td>
-                    <td>${c.carte_payee ? '<span class="badge badge-success">Payée</span>' : '<span class="badge badge-danger">-1000 FC</span>'}</td>
-                    <td style="color: ${soldeFinal >= 0 ? 'var(--vert-finance)' : 'var(--rouge-dette)'}; font-weight: bold;">${soldeFinal.toLocaleString('de-DE')} FC</td>
-                    <td class="admin-action" style="display: ${currentRole === 'admin' ? 'table-cell' : 'none'};">
-                        <button class="add-btn" style="padding: 5px 10px; font-size: 12px; background-color: var(--vert-finance);" onclick="restaurerCompte(${c.id})"><i class="fa-solid fa-rotate-left"></i> Restaurer</button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
+function renderCorbeille() {
+    const tbody = document.getElementById('table-corbeille-body');
+    if (!tbody) return;
+    tbody.innerHTML = "";
 
+    const comptesCorbeille = db.comptes.filter(c => c.statut === 'corbeille');
+
+    comptesCorbeille.forEach(c => {
+        let stats = calculerStatsCompte(c.id);
+        let soldeRendu = stats.totalDepots - stats.totalPrets - safeNum(c.montant_initial) - (c.carte_payee ? 0 : 1000);
+
+        let tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${c.date_sortie || c.date || '-'}</td>
+            <td><strong>${c.prenom} ${c.nom}</strong></td>
+            <td>${c.adresse}</td>
+            <td>${safeNum(c.montant_initial).toLocaleString('de-DE')} FC</td>
+            <td>${stats.totalDepots.toLocaleString('de-DE')} FC</td>
+            <td>${stats.totalPrets.toLocaleString('de-DE')} FC</td>
+            <td>${c.carte_payee ? '1.000 FC' : '0 FC'}</td>
+            <td style="color:var(--vert-finance); font-weight:bold;">${soldeRendu.toLocaleString('de-DE')} FC</td>
+            <td class="admin-action">
+                <div class="action-icons">
+                    <button class="add-icon" onclick="restaurerCompte(${c.id})" title="Rétablir le compte"><i class="fa-solid fa-rotate-left"></i></button>
+                    <button class="delete-icon" onclick="supprimerDefinitivementCompte(${c.id})" title="Supprimer définitivement"><i class="fa-solid fa-trash"></i></button>
+                </div>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
         async function restaurerCompte(compteId) {
             if (!confirm("Voulez-vous restaurer ce compte client dans la liste active ?")) return;
             const { error } = await executeMutation('comptes', 'update', { statut: 'actif' }, 'id', compteId);

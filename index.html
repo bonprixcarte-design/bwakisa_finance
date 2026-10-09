@@ -992,7 +992,7 @@ body.is-admin #adminCircleContainer {
             document.getElementById('actionModal').style.display = 'flex';
         }
 
-        function ouvrirModalCloture(compteId) {
+      function ouvrirModalCloture(compteId) {
     const compte = db.comptes.find(c => c.id === compteId);
     if (!compte) return;
     
@@ -1439,7 +1439,14 @@ function renderCorbeille() {
     if (!tbody) return;
     tbody.innerHTML = "";
 
-    const comptesCorbeille = db.comptes.filter(c => c.statut === 'corbeille');
+    // Filtrer et trier les comptes du plus récent au plus ancien selon la date de clôture (date_sortie)
+    const comptesCorbeille = db.comptes
+        .filter(c => c.statut === 'corbeille')
+        .sort((a, b) => {
+            let dateA = a.date_sortie || a.date || "";
+            let dateB = b.date_sortie || b.date || "";
+            return dateB.localeCompare(dateA);
+        });
 
     comptesCorbeille.forEach(c => {
         let stats = calculerStatsCompte(c.id);
@@ -1458,7 +1465,7 @@ function renderCorbeille() {
             <td class="admin-action">
                 <div class="action-icons">
                     <button class="add-icon" onclick="restaurerCompte(${c.id})" title="Rétablir le compte"><i class="fa-solid fa-rotate-left"></i></button>
-                    <button class="delete-icon" onclick="supprimerDefinitivementCompte(${c.id})" title="Supprimer définitivement"><i class="fa-solid fa-trash"></i></button>
+                    <button class="delete-icon" onclick="supprimerDefinitivementCorbeille(${c.id})" title="Supprimer définitivement"><i class="fa-solid fa-trash"></i></button>
                 </div>
             </td>
         `;
@@ -1481,29 +1488,49 @@ function renderCorbeille() {
             else { alert("Erreur : " + error.message); }
         }
 
-        function purgerCorbeilleMensuelle() {
-            let corbeilleComptes = db.comptes.filter(c => c.statut === 'corbeille');
-            if (corbeilleComptes.length === 0) return alert("La corbeille est vide, rien à purger.");
-            if (!confirm("Voulez-vous exporter en Excel et purger les comptes clôturés ?")) return;
-            let exportData = corbeilleComptes.map(c => {
-                let stats = calculerStatsCompte(c.id);
-                let soldeRendu = stats.totalDepots - stats.totalPrets - safeNum(c.montant_initial) - (c.carte_payee ? 0 : 1000);
-                return {
-                    "ID Client": genererIdentifiantClient(c.id),
-                    "Prénom": c.prenom, "Nom": c.nom, "Adresse": c.adresse,
-                    "Montant Initial": c.montant_initial,
-                    "Total Dépôts": stats.totalDepots, "Total Dettes": stats.totalPrets,
-                    "Frais Carte": c.carte_payee ? "Payée" : "Non payée (-1000 FC)",
-                    "Solde Final Rendu": soldeRendu, "Date Clôture": c.date || ""
-                };
-            });
-            let ws = XLSX.utils.json_to_sheet(exportData);
-            let wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "Comptes Clôturés");
-            let fileName = `Purge_Corbeille_Bwakisa_${new Date().toISOString().split('T')[0]}.xlsx`;
-            XLSX.writeFile(wb, fileName);
-            showNotification("Export Excel généré avec succès.", "success");
-        }
+            async function purgerCorbeilleMensuelle() {
+                let corbeilleComptes = db.comptes.filter(c => c.statut === 'corbeille');
+                if (corbeilleComptes.length === 0) return alert("La corbeille est vide, rien à purger.");
+
+                if (!confirm("⚠️ Voulez-vous exporter en Excel ET SUPPRIMER DÉFINITIVEMENT tous les comptes clôturés de la corbeille ?")) return;
+
+                // 1. Exportation des données vers le fichier Excel
+                let exportData = corbeilleComptes.map(c => {
+                    let stats = calculerStatsCompte(c.id);
+                    let soldeRendu = stats.totalDepots - stats.totalPrets - safeNum(c.montant_initial) - (c.carte_payee ? 0 : 1000);
+                    return {
+                        "ID Client": genererIdentifiantClient(c.id),
+                        "Prénom": c.prenom,
+                        "Nom": c.nom,
+                        "Adresse": c.adresse,
+                        "Montant Initial": c.montant_initial,
+                        "Total Dépôts": stats.totalDepots,
+                        "Total Dettes": stats.totalPrets,
+                        "Frais Carte": c.carte_payee ? "Payée" : "Non payée (-1000 FC)",
+                        "Solde Final Rendu": soldeRendu,
+                        "Date Clôture": c.date_sortie || c.date || ""
+                    };
+                });
+
+                let ws = XLSX.utils.json_to_sheet(exportData);
+                let wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Comptes Clôturés");
+                let fileName = `Purge_Corbeille_Bwakisa_${new Date().toISOString().split('T')[0]}.xlsx`;
+                XLSX.writeFile(wb, fileName);
+
+                showNotification("Export Excel généré avec succès. Suppression en cours...", "warning");
+
+                // 2. Suppression définitive dans Supabase (transactions + comptes)
+                for (let c of corbeilleComptes) {
+                    // Supprime les transactions du compte clôturé
+                    await executeMutation('transactions', 'delete', null, 'compte_id', c.id);
+                    // Supprime le compte lui-même
+                    await executeMutation('comptes', 'delete', null, 'id', c.id);
+                }
+
+                showNotification("La corbeille a été entièrement purgée et supprimée.", "success");
+                await actualiserInterface();
+            }
 
         async function ouvrirModalGestionAgents() {
             if (currentRole !== 'admin') return alert("Accès réservé aux administrateurs.");

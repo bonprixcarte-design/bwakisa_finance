@@ -462,11 +462,12 @@ body.is-admin #adminCircleContainer {
                     </div>
                 </section>
 
-                <section id="page-corbeille" class="page-section">
+               <section id="page-corbeille" class="page-section">
                     <h2 class="section-title">Corbeille / Comptes Clôturés</h2>
                     <p class="section-subtitle">Comptes retirés par les agents ou administrateurs.</p>
-                    <div class="action-bar admin-action">
-                        <button class="add-btn" style="background-color: var(--rouge-dette);" onclick="purgerCorbeilleMensuelle()"><i class="fa-solid fa-file-excel"></i> Archiver & Purger (Fin de mois)</button>
+                    <div class="action-bar">
+                        <button class="add-btn admin-action" style="background-color: var(--rouge-dette);" onclick="purgerCorbeilleMensuelle()"><i class="fa-solid fa-file-excel"></i> Archiver & Purger (Fin de mois)</button>
+                        <input type="text" id="searchCorbeille" class="filter-input filter-input-search" placeholder="🔍 Rechercher (Nom, Adresse...)" oninput="renderCorbeille()">
                     </div>
                     <div class="table-container">
                         <table>
@@ -1434,44 +1435,59 @@ body.is-admin #adminCircleContainer {
             tbody.appendChild(paginationRow);
         }
 
-function renderCorbeille() {
-    const tbody = document.getElementById('table-corbeille-body');
-    if (!tbody) return;
-    tbody.innerHTML = "";
+        function renderCorbeille() {
+            const tbody = document.getElementById('table-corbeille-body');
+            if (!tbody) return;
+            tbody.innerHTML = "";
 
-    // Filtrer et trier les comptes du plus récent au plus ancien selon la date de clôture (date_sortie)
-    const comptesCorbeille = db.comptes
-        .filter(c => c.statut === 'corbeille')
-        .sort((a, b) => {
-            let dateA = a.date_sortie || a.date || "";
-            let dateB = b.date_sortie || b.date || "";
-            return dateB.localeCompare(dateA);
-        });
+            const searchTxt = (document.getElementById('searchCorbeille')?.value || "").toLowerCase();
 
-    comptesCorbeille.forEach(c => {
-        let stats = calculerStatsCompte(c.id);
-        let soldeRendu = stats.totalDepots - stats.totalPrets - safeNum(c.montant_initial) - (c.carte_payee ? 0 : 1000);
+            // Filtrer selon la recherche et trier du plus récent au plus ancien (date_sortie)
+            const comptesCorbeille = db.comptes
+                .filter(c => c.statut === 'corbeille')
+                .filter(c => {
+                    if (!searchTxt) return true;
+                    let nomComplet = `${c.prenom} ${c.nom}`.toLowerCase();
+                    let codeClient = genererIdentifiantClient(c.id).toLowerCase();
+                    return nomComplet.includes(searchTxt) || 
+                        c.adresse.toLowerCase().includes(searchTxt) || 
+                        codeClient.includes(searchTxt);
+                })
+                .sort((a, b) => {
+                    let dateA = a.date_sortie || a.date || "";
+                    let dateB = b.date_sortie || b.date || "";
+                    return dateB.localeCompare(dateA);
+                });
 
-        let tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td>${c.date_sortie || c.date || '-'}</td>
-            <td><strong>${c.prenom} ${c.nom}</strong></td>
-            <td>${c.adresse}</td>
-            <td>${safeNum(c.montant_initial).toLocaleString('de-DE')} FC</td>
-            <td>${stats.totalDepots.toLocaleString('de-DE')} FC</td>
-            <td>${stats.totalPrets.toLocaleString('de-DE')} FC</td>
-            <td>${c.carte_payee ? '1.000 FC' : '0 FC'}</td>
-            <td style="color:var(--vert-finance); font-weight:bold;">${soldeRendu.toLocaleString('de-DE')} FC</td>
-            <td class="admin-action">
-                <div class="action-icons">
-                    <button class="add-icon" onclick="restaurerCompte(${c.id})" title="Rétablir le compte"><i class="fa-solid fa-rotate-left"></i></button>
-                    <button class="delete-icon" onclick="supprimerDefinitivementCorbeille(${c.id})" title="Supprimer définitivement"><i class="fa-solid fa-trash"></i></button>
-                </div>
-            </td>
-        `;
-        tbody.appendChild(tr);
-    });
-}
+            if (comptesCorbeille.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding: 20px; color: var(--texte-gris);">Aucun compte trouvé.</td></tr>`;
+                return;
+            }
+
+            comptesCorbeille.forEach(c => {
+                let stats = calculerStatsCompte(c.id);
+                let soldeRendu = stats.totalDepots - stats.totalPrets - safeNum(c.montant_initial) - (c.carte_payee ? 0 : 1000);
+
+                let tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${c.date_sortie || c.date || '-'}</td>
+                    <td><strong>${c.prenom} ${c.nom}</strong></td>
+                    <td>${c.adresse}</td>
+                    <td>${safeNum(c.montant_initial).toLocaleString('de-DE')} FC</td>
+                    <td>${stats.totalDepots.toLocaleString('de-DE')} FC</td>
+                    <td>${stats.totalPrets.toLocaleString('de-DE')} FC</td>
+                    <td>${c.carte_payee ? '1.000 FC' : '0 FC'}</td>
+                    <td style="color:var(--vert-finance); font-weight:bold;">${soldeRendu.toLocaleString('de-DE')} FC</td>
+                    <td class="admin-action">
+                        <div class="action-icons">
+                            <button class="add-icon" onclick="restaurerCompte(${c.id})" title="Rétablir le compte"><i class="fa-solid fa-rotate-left"></i></button>
+                            <button class="delete-icon" onclick="supprimerDefinitivementCorbeille(${c.id})" title="Supprimer définitivement"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
         async function restaurerCompte(compteId) {
             if (!confirm("Voulez-vous restaurer ce compte client dans la liste active ?")) return;
             const { error } = await executeMutation('comptes', 'update', { statut: 'actif' }, 'id', compteId);

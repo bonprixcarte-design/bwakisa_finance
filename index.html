@@ -329,7 +329,8 @@ body.is-admin #adminCircleContainer {
                 <li><a class="menu-item" onclick="switchPage('historique')"><i class="fa-solid fa-receipt"></i><span class="menu-text">Historique Opérations</span></a></li>
                 <div class="admin-section-circle admin-action" id="adminCircleContainer">
                     <div class="admin-section-title">Espace Décisions</div>
-                    <li><a class="menu-item" onclick="switchPage('corbeille')"><i class="fa-solid fa-trash-can" style="color: var(--rouge-dette);"></i><span class="menu-text">Corbeille (Clôturés)</span></a></li>
+                    <li><a class="menu-item" onclick="switchPage('corbeille')"><i class="fa-solid fa-trash-can" style="color: var(--rouge-dette);"></i><span class="menu-text">Corbeille </span></a></li>
+                    <li><a class="menu-item" onclick="switchPage('archive')"><i class="fa-solid fa-box-archive" style="color: var(--violet-init);"></i><span class="menu-text">Archives Excel</span></a></li>
                 </div>
             </ul>
             <div class="admin-action" style="padding: 10px 15px;">
@@ -480,6 +481,7 @@ body.is-admin #adminCircleContainer {
                                     <th>Dépôts</th>
                                     <th>Dettes</th>
                                     <th>Frais Carte</th>
+                                    <th>Cartes Perdues</th>
                                     <th>Solde Final Rendu</th>
                                     <th class="admin-action">Action Admin</th>
                                 </tr>
@@ -488,6 +490,32 @@ body.is-admin #adminCircleContainer {
                         </table>
                     </div>
                 </section>
+                <section id="page-archive" class="page-section">
+                    <h2 class="section-title">Archives des Comptes Purgés</h2>
+                    <p class="section-subtitle">Sélectionnez un dossier entier pour rechercher dans tous vos fichiers Excel d'archive.</p>
+                    <div class="action-bar">
+                        <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap; flex-grow: 1;">
+                            <!-- Bouton pour sélectionner un dossier entier -->
+                            <label class="add-btn" style="cursor: pointer; margin-bottom: 0; display: inline-flex; align-items: center; gap: 8px; background-color: var(--violet-init);">
+                                <i class="fa-solid fa-folder-open"></i> Sélectionner un dossier d'archives
+                                <input type="file" id="inputArchiveFolder" webkitdirectory directory multiple style="display: none;" onchange="importerDossierArchives(event)">
+                            </label>
+                            <input type="text" id="searchArchive" class="filter-input filter-input-search" placeholder="🔍 Rechercher dans tous les fichiers..." oninput="renderArchiveTable()" disabled>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr id="table-archive-header">
+                                    <th>Statut</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-archive-body">
+                                <tr><td style="text-align:center; padding: 30px; color: var(--texte-gris);">Veuillez sélectionner un dossier pour charger les archives.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+              </section>
             </main>
         </div>
     </div>
@@ -1435,60 +1463,167 @@ body.is-admin #adminCircleContainer {
             tbody.appendChild(paginationRow);
         }
 
-        function renderCorbeille() {
-            const tbody = document.getElementById('table-corbeille-body');
-            if (!tbody) return;
-            tbody.innerHTML = "";
+let archiveDonneesJson = [];
 
-            const searchTxt = (document.getElementById('searchCorbeille')?.value || "").toLowerCase();
+// Fonction pour lire un dossier entier contenant plusieurs fichiers Excel
+async function importerDossierArchives(event) {
+    let files = event.target.files;
+    if (!files || files.length === 0) return;
 
-            // Filtrer selon la recherche et trier du plus récent au plus ancien (date_sortie)
-            const comptesCorbeille = db.comptes
-                .filter(c => c.statut === 'corbeille')
-                .filter(c => {
-                    if (!searchTxt) return true;
-                    let nomComplet = `${c.prenom} ${c.nom}`.toLowerCase();
-                    let codeClient = genererIdentifiantClient(c.id).toLowerCase();
-                    return nomComplet.includes(searchTxt) || 
-                        c.adresse.toLowerCase().includes(searchTxt) || 
-                        codeClient.includes(searchTxt);
-                })
-                .sort((a, b) => {
-                    let dateA = a.date_sortie || a.date || "";
-                    let dateB = b.date_sortie || b.date || "";
-                    return dateB.localeCompare(dateA);
-                });
+    archiveDonneesJson = [];
+    let totalFichiersExcel = 0;
 
-            if (comptesCorbeille.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding: 20px; color: var(--texte-gris);">Aucun compte trouvé.</td></tr>`;
-                return;
-            }
-
-            comptesCorbeille.forEach(c => {
-                let stats = calculerStatsCompte(c.id);
-                let soldeRendu = stats.totalDepots - stats.totalPrets - safeNum(c.montant_initial) - (c.carte_payee ? 0 : 1000);
-
-                let tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${c.date_sortie || c.date || '-'}</td>
-                    <td><strong>${c.prenom} ${c.nom}</strong></td>
-                    <td>${c.adresse}</td>
-                    <td>${safeNum(c.montant_initial).toLocaleString('de-DE')} FC</td>
-                    <td>${stats.totalDepots.toLocaleString('de-DE')} FC</td>
-                    <td>${stats.totalPrets.toLocaleString('de-DE')} FC</td>
-                    <td>${c.carte_payee ? '1.000 FC' : '0 FC'}</td>
-                    <td style="color:var(--vert-finance); font-weight:bold;">${soldeRendu.toLocaleString('de-DE')} FC</td>
-                    <td class="admin-action">
-                        <div class="action-icons">
-                            <button class="add-icon" onclick="restaurerCompte(${c.id})" title="Rétablir le compte"><i class="fa-solid fa-rotate-left"></i></button>
-                            <button class="delete-icon" onclick="supprimerDefinitivementCorbeille(${c.id})" title="Supprimer définitivement"><i class="fa-solid fa-trash"></i></button>
-                        </div>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
+    // Compter combien de fichiers Excel valides se trouvent dans le dossier
+    for (let file of files) {
+        let ext = file.name.split('.').pop().toLowerCase();
+        if (['xlsx', 'xls', 'csv'].includes(ext)) {
+            totalFichiersExcel++;
         }
-        async function restaurerCompte(compteId) {
+    }
+
+    if (totalFichiersExcel === 0) {
+        return alert("Aucun fichier Excel (.xlsx, .xls, .csv) n'a été trouvé dans ce dossier.");
+    }
+
+    showNotification(`Lecture de ${totalFichiersExcel} fichier(s) Excel en cours...`, "warning");
+
+    // Parcourir et lire chaque fichier du dossier
+    for (let file of files) {
+        let ext = file.name.split('.').pop().toLowerCase();
+        if (!['xlsx', 'xls', 'csv'].includes(ext)) continue;
+
+        await new Promise((resolve) => {
+            let reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    let data = new Uint8Array(e.target.result);
+                    let workbook = XLSX.read(data, { type: 'array' });
+                    
+                    workbook.SheetNames.forEach(sheetName => {
+                        let worksheet = workbook.Sheets[sheetName];
+                        let jsonRows = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+                        
+                        // Ajouter le nom du fichier source à chaque ligne pour s'y retrouver
+                        jsonRows.forEach(row => {
+                            row["Fichier Source"] = file.name;
+                            archiveDonneesJson.push(row);
+                        });
+                    });
+                } catch (err) {
+                    console.error(`Erreur de lecture sur le fichier ${file.name}:`, err);
+                }
+                resolve();
+            };
+            reader.readAsArrayBuffer(file);
+        });
+    }
+
+    if (archiveDonneesJson.length > 0) {
+        showNotification(`Succès ! ${archiveDonneesJson.length} lignes chargées depuis ${totalFichiersExcel} fichier(s).`, "success");
+        document.getElementById('searchArchive').disabled = false;
+        renderArchiveTable();
+    } else {
+        alert("Les fichiers Excel de ce dossier sont vides ou illisibles.");
+    }
+}
+
+// Fonction pour afficher et filtrer globalement les données de tous les fichiers
+function renderArchiveTable() {
+    const theadTr = document.getElementById('table-archive-header');
+    const tbody = document.getElementById('table-archive-body');
+    if (!tbody || !theadTr) return;
+
+    const searchTxt = (document.getElementById('searchArchive')?.value || "").toLowerCase();
+
+    if (archiveDonneesJson.length === 0) {
+        theadTr.innerHTML = `<th>Statut</th>`;
+        tbody.innerHTML = `<tr><td style="text-align:center; padding: 20px; color: var(--texte-gris);">Aucune donnée à afficher.</td></tr>`;
+        return;
+    }
+
+    // Récupérer dynamiquement toutes les colonnes présentes dans les fichiers Excel
+    let colonnes = Object.keys(archiveDonneesJson[0]);
+    theadTr.innerHTML = colonnes.map(col => `<th>${col}</th>`).join('');
+
+    // Filtrer les lignes à travers tous les fichiers chargés
+    let donneesFiltrees = archiveDonneesJson.filter(row => {
+        if (!searchTxt) return true;
+        return Object.values(row).some(val => 
+            String(val).toLowerCase().includes(searchTxt)
+        );
+    });
+
+    if (donneesFiltrees.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="${colonnes.length}" style="text-align:center; padding: 20px; color: var(--texte-gris);">Aucun résultat trouvé pour cette recherche.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = "";
+    donneesFiltrees.forEach(row => {
+        let tr = document.createElement('tr');
+        let trHtml = "";
+        colonnes.forEach(col => {
+            let val = row[col] !== undefined ? row[col] : "";
+            trHtml += `<td>${val}</td>`;
+        });
+        tr.innerHTML = trHtml;
+        tbody.appendChild(tr);
+    });
+}
+       function renderCorbeille() {
+    const tbody = document.getElementById('table-corbeille-body');
+    if (!tbody) return;
+    tbody.innerHTML = "";
+
+    const searchTxt = (document.getElementById('searchCorbeille')?.value || "").toLowerCase();
+
+    // Filtrer selon la recherche et trier du plus récent au plus ancien (date_sortie)
+    const comptesCorbeille = db.comptes
+        .filter(c => c.statut === 'corbeille')
+        .filter(c => {
+            if (!searchTxt) return true;
+            let nomComplet = `${c.prenom} ${c.nom}`.toLowerCase();
+            let codeClient = genererIdentifiantClient(c.id).toLowerCase();
+            return nomComplet.includes(searchTxt) || 
+                c.adresse.toLowerCase().includes(searchTxt) || 
+                codeClient.includes(searchTxt);
+        })
+        .sort((a, b) => {
+            let dateA = a.date_sortie || a.date || "";
+            let dateB = b.date_sortie || b.date || "";
+            return dateB.localeCompare(dateA);
+        });
+
+    if (comptesCorbeille.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; padding: 20px; color: var(--texte-gris);">Aucun compte trouvé.</td></tr>`;
+        return;
+    }
+
+    comptesCorbeille.forEach(c => {
+        let stats = calculerStatsCompte(c.id);
+        let soldeRendu = stats.totalDepots - stats.totalPrets - safeNum(c.montant_initial) - (c.carte_payee ? 0 : 1000);
+
+        let tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${c.date_sortie || c.date || '-'}</td>
+            <td><strong>${c.prenom} ${c.nom}</strong></td>
+            <td>${c.adresse}</td>
+            <td>${safeNum(c.montant_initial).toLocaleString('de-DE')} FC</td>
+            <td>${stats.totalDepots.toLocaleString('de-DE')} FC</td>
+            <td>${stats.totalPrets.toLocaleString('de-DE')} FC</td>
+            <td>${c.carte_payee ? '1.000 FC' : '0 FC'}</td>
+            <td style="color:var(--rouge-dette); font-weight:bold; text-align:center;">${c.carte_perdue_count || 0}</td> <!-- 👈 AFFICHAGE CARTE PERDUE -->
+            <td style="color:var(--vert-finance); font-weight:bold;">${soldeRendu.toLocaleString('de-DE')} FC</td>
+            <td class="admin-action">
+                <div class="action-icons">
+                    <button class="add-icon" onclick="restaurerCompte(${c.id})" title="Rétablir le compte"><i class="fa-solid fa-rotate-left"></i></button>
+                    <button class="delete-icon" onclick="supprimerDefinitivementCorbeille(${c.id})" title="Supprimer définitivement"><i class="fa-solid fa-trash"></i></button>
+                </div>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}        async function restaurerCompte(compteId) {
             if (!confirm("Voulez-vous restaurer ce compte client dans la liste active ?")) return;
             const { error } = await executeMutation('comptes', 'update', { statut: 'actif' }, 'id', compteId);
             if (!error) { showNotification("Compte restauré avec succès !", "success"); await actualiserInterface(); } 
@@ -1504,49 +1639,50 @@ body.is-admin #adminCircleContainer {
             else { alert("Erreur : " + error.message); }
         }
 
-            async function purgerCorbeilleMensuelle() {
-                let corbeilleComptes = db.comptes.filter(c => c.statut === 'corbeille');
-                if (corbeilleComptes.length === 0) return alert("La corbeille est vide, rien à purger.");
+           async function purgerCorbeilleMensuelle() {
+    let corbeilleComptes = db.comptes.filter(c => c.statut === 'corbeille');
+    if (corbeilleComptes.length === 0) return alert("La corbeille est vide, rien à purger.");
 
-                if (!confirm("⚠️ Voulez-vous exporter en Excel ET SUPPRIMER DÉFINITIVEMENT tous les comptes clôturés de la corbeille ?")) return;
+    if (!confirm("⚠️ Voulez-vous exporter en Excel ET SUPPRIMER DÉFINITIVEMENT tous les comptes clôturés de la corbeille ?")) return;
 
-                // 1. Exportation des données vers le fichier Excel
-                let exportData = corbeilleComptes.map(c => {
-                    let stats = calculerStatsCompte(c.id);
-                    let soldeRendu = stats.totalDepots - stats.totalPrets - safeNum(c.montant_initial) - (c.carte_payee ? 0 : 1000);
-                    return {
-                        "ID Client": genererIdentifiantClient(c.id),
-                        "Prénom": c.prenom,
-                        "Nom": c.nom,
-                        "Adresse": c.adresse,
-                        "Montant Initial": c.montant_initial,
-                        "Total Dépôts": stats.totalDepots,
-                        "Total Dettes": stats.totalPrets,
-                        "Frais Carte": c.carte_payee ? "Payée" : "Non payée (-1000 FC)",
-                        "Solde Final Rendu": soldeRendu,
-                        "Date Clôture": c.date_sortie || c.date || ""
-                    };
-                });
+    // 1. Exportation des données vers le fichier Excel
+    let exportData = corbeilleComptes.map(c => {
+        let stats = calculerStatsCompte(c.id);
+        let soldeRendu = stats.totalDepots - stats.totalPrets - safeNum(c.montant_initial) - (c.carte_payee ? 0 : 1000);
+        return {
+            "ID Client": genererIdentifiantClient(c.id),
+            "Prénom": c.prenom,
+            "Nom": c.nom,
+            "Adresse": c.adresse,
+            "Montant Initial": c.montant_initial,
+            "Total Dépôts": stats.totalDepots,
+            "Total Dettes": stats.totalPrets,
+            "Frais Carte": c.carte_payee ? "Payée" : "Non payée (-1000 FC)",
+            "Cartes Perdues": c.carte_perdue_count || 0, // 👈 INCLUSION DANS L'EXPORT EXCEL
+            "Solde Final Rendu": soldeRendu,
+            "Date Clôture": c.date_sortie || c.date || ""
+        };
+    });
 
-                let ws = XLSX.utils.json_to_sheet(exportData);
-                let wb = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(wb, ws, "Comptes Clôturés");
-                let fileName = `Purge_Corbeille_Bwakisa_${new Date().toISOString().split('T')[0]}.xlsx`;
-                XLSX.writeFile(wb, fileName);
+    let ws = XLSX.utils.json_to_sheet(exportData);
+    let wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Comptes Clôturés");
+    let fileName = `Purge_Corbeille_Bwakisa_${new Date().toISOString().split('T')[0]}.xlsx`;
+    XLSX.writeFile(wb, fileName);
 
-                showNotification("Export Excel généré avec succès. Suppression en cours...", "warning");
+    showNotification("Export Excel généré avec succès. Suppression en cours...", "warning");
 
-                // 2. Suppression définitive dans Supabase (transactions + comptes)
-                for (let c of corbeilleComptes) {
-                    // Supprime les transactions du compte clôturé
-                    await executeMutation('transactions', 'delete', null, 'compte_id', c.id);
-                    // Supprime le compte lui-même
-                    await executeMutation('comptes', 'delete', null, 'id', c.id);
-                }
+    // 2. Suppression définitive dans Supabase (transactions + comptes)
+    for (let c of corbeilleComptes) {
+        // Supprime les transactions du compte clôturé
+        await executeMutation('transactions', 'delete', null, 'compte_id', c.id);
+        // Supprime le compte lui-même
+        await executeMutation('comptes', 'delete', null, 'id', c.id);
+    }
 
-                showNotification("La corbeille a été entièrement purgée et supprimée.", "success");
-                await actualiserInterface();
-            }
+    showNotification("La corbeille a été entièrement purgée et supprimée.", "success");
+    await actualiserInterface();
+}
 
         async function ouvrirModalGestionAgents() {
             if (currentRole !== 'admin') return alert("Accès réservé aux administrateurs.");

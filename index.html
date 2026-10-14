@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BWAKISA CARTE</title>
+    <title>BWAKISA CARTE - Gestion Portefeuille</title>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
@@ -379,7 +379,7 @@ body.is-admin #adminCircleContainer {
                     <div class="chart-wrapper"><canvas id="evolutionChart"></canvas></div>
                 </section>
 
-                <section id="page-comptes" class="page-section">
+<section id="page-comptes" class="page-section">
                     <h2 class="section-title">Comptes Clients & Opérations</h2>
                     <div class="action-bar">
                         <button class="add-btn" onclick="ouvrirModalCompte()"><i class="fa-solid fa-plus"></i> Créer nouveau compte</button>
@@ -397,6 +397,27 @@ body.is-admin #adminCircleContainer {
 
                         <input type="text" id="searchComptes" class="filter-input filter-input-search" placeholder="🔍 Rechercher (Nom, Adresse...)" oninput="rechercherComptes()">
                     </div>
+
+                    <!-- 👈 TABLEAU DES COMPTES RESTAURÉ -->
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Prénom</th>
+                                    <th>Nom</th>
+                                    <th>Adresse</th>
+                                    <th>Montant Initial</th>
+                                    <th>Total Dépôts</th>
+                                    <th>Total Dettes</th>
+                                    <th>Statut Carte</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-comptes-body"></tbody>
+                        </table>
+                    </div>
+                </section>
 
                 <section id="page-dettes_hc" class="page-section">
                     <h2 class="section-title">Gestion Hors Carte (Prêts & Garde)</h2>

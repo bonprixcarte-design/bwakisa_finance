@@ -354,6 +354,7 @@ body.is-admin #adminCircleContainer {
             </header>
 
             <main class="main-content">
+               
                 <section id="page-dashboard" class="page-section active">
                     <h2 class="section-title">Aperçu Financier Global</h2>
                     <p class="section-subtitle">Ces indicateurs représentent le total cumulé</p>
@@ -382,17 +383,20 @@ body.is-admin #adminCircleContainer {
                     <h2 class="section-title">Comptes Clients & Opérations</h2>
                     <div class="action-bar">
                         <button class="add-btn" onclick="ouvrirModalCompte()"><i class="fa-solid fa-plus"></i> Créer nouveau compte</button>
+                        
+                        <!-- 👈 PETITE CARTE NOMBRE DE CLIENTS ACTIFS -->
+                        <div style="background-color: var(--bg-navigation); border: 1px solid var(--border-couleur); border-radius: 10px; padding: 10px 18px; display: flex; align-items: center; gap: 12px;">
+                            <div style="background: rgba(16, 185, 129, 0.15); color: var(--vert-finance); width: 35px; height: 35px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px;">
+                                <i class="fa-solid fa-users"></i>
+                            </div>
+                            <div>
+                                <div style="font-size: 11px; color: var(--texte-gris); text-transform: uppercase; font-weight: 600;">Clients Actifs</div>
+                                <div id="compteur-clients-actifs" style="font-size: 16px; font-weight: bold; color: var(--vert-finance);">0</div>
+                            </div>
+                        </div>
+
                         <input type="text" id="searchComptes" class="filter-input filter-input-search" placeholder="🔍 Rechercher (Nom, Adresse...)" oninput="rechercherComptes()">
                     </div>
-                    <div class="table-container">
-                        <table>
-                            <thead>
-                                <tr><th>ID</th><th>Prénom</th><th>Nom</th><th>Adresse</th><th>M. Initial</th><th>Dépôts</th><th>Dettes</th><th>Carte</th><th>Actions</th></tr>
-                            </thead>
-                            <tbody id="table-comptes-body"></tbody>
-                        </table>
-                    </div>
-                </section>
 
                 <section id="page-dettes_hc" class="page-section">
                     <h2 class="section-title">Gestion Hors Carte (Prêts & Garde)</h2>
@@ -666,9 +670,9 @@ body.is-admin #adminCircleContainer {
             else { if(miniLogo) miniLogo.style.display = "block"; if(brandText) brandText.style.display = "none"; if(brandSub) brandSub.style.display = "none"; }
         }
         window.addEventListener('resize', updateMiniLogoVisibility);
-        function genererIdentifiantClient(compteId) { let index = db.comptes.concat().sort((a,b) => a.id - b.id).findIndex(c => c.id === compteId); if(index === -1) return "BC" + String(compteId).padStart(4, '0'); return "BC" + String(index + 1).padStart(4, '0'); }
-
-        async function handleLogin(event) {
+        function genererIdentifiantClient(compteId) { 
+            return "BC" + String(compteId).padStart(4, '0'); 
+        } async function handleLogin(event) {
             event.preventDefault();
             const selectedRole = document.getElementById('role').value; const inputUsername = document.getElementById('username').value.trim(); const inputPassword = document.getElementById('password').value; const submitBtn = document.getElementById('loginSubmitBtn');
             submitBtn.innerText = "Vérification..."; submitBtn.disabled = true;
@@ -879,12 +883,18 @@ body.is-admin #adminCircleContainer {
 
         function rechercherComptes() { currentPage = 1; renderComptes(); }
         function changerPage(direction) { currentPage += direction; renderComptes(); }
-
-        function renderComptes() {
+function renderComptes() {
             const tbody = document.getElementById('table-comptes-body'); tbody.innerHTML = "";
             const searchTxt = document.getElementById('searchComptes').value.toLowerCase();
+            
             let comptesActifs = db.comptes.filter(c => c.statut === 'actif').filter(c => !searchTxt || c.nom.toLowerCase().includes(searchTxt) || c.prenom.toLowerCase().includes(searchTxt) || c.adresse.toLowerCase().includes(searchTxt)).sort((a, b) => b.id - a.id);
-            const totalPages = Math.ceil(comptesActifs.length / itemsPerPage) || 1;
+
+            // 👈 Mise à jour du nombre total de clients actifs (sans tenir compte du filtre de recherche)
+            let totalActifsReels = db.comptes.filter(c => c.statut === 'actif').length;
+            const badgeCompteur = document.getElementById('compteur-clients-actifs');
+            if (badgeCompteur) {
+                badgeCompteur.innerText = totalActifsReels.toLocaleString('de-DE');
+            }  const totalPages = Math.ceil(comptesActifs.length / itemsPerPage) || 1;
             if (currentPage > totalPages) currentPage = totalPages; if (currentPage < 1) currentPage = 1;
             const pageItems = comptesActifs.slice((currentPage - 1) * itemsPerPage, ((currentPage - 1) * itemsPerPage) + itemsPerPage);
 
@@ -1128,10 +1138,11 @@ body.is-admin #adminCircleContainer {
                     <div>Frais Carte: <strong>${compte.carte_payee ? 'PAYÉE (1000 FC)' : 'NON PAYÉE'}</strong></div>
                     <div>Cartes Perdues: <strong style="color:var(--rouge-dette);">${compte.carte_perdue_count || 0}</strong></div>
                 </div>
-                <div class="card-action-panel">
-                    <button style="background:var(--vert-finance); color:white;" onclick="ouvrirModalTransaction(${compte.id}, 'depot', ${currentBoxIndex >= 31})"><i class="fa-solid fa-plus"></i> Dépôt</button>
+              <div class="card-action-panel">
+                    <button style="background:var(--vert-finance); color:white;" onclick="ouvrirModalTransaction(${compte.id}, 'depot',${currentBoxIndex >= 31})"><i class="fa-solid fa-plus"></i> Dépôt</button>
                     <button style="background:var(--rouge-dette); color:white;" onclick="ouvrirModalTransaction(${compte.id}, 'emprunt', false)"><i class="fa-solid fa-hand-holding-dollar"></i> Emprunt / Remboursement</button>
                     <button style="background:var(--bleu-accent); color:white;" onclick="ouvrirModalModificationCompte(${compte.id})"><i class="fa-solid fa-pen-to-square"></i> Corriger</button>
+                    <button style="background:var(--rouge-dette); color:white;" onclick="annulerDerniereOperationCompte(${compte.id})"><i class="fa-solid fa-rotate-left"></i> Annuler Dernier</button>
                     ${!compte.carte_payee ? `<button style="background:var(--violet-init); color:white;" onclick="payerFraisCarte(${compte.id})"><i class="fa-solid fa-credit-card"></i> Payer Carte (1000 FC)</button>` : ''}
                     <button style="background:#f59e0b; color:white;" onclick="declarerCartePerdue(${compte.id})"><i class="fa-solid fa-id-badge"></i> Perte Carte</button>
                 </div>
@@ -1144,6 +1155,34 @@ body.is-admin #adminCircleContainer {
             const { error } = await executeMutation('comptes', 'update', { carte_payee: true }, 'id', compteId);
             if (!error) { showNotification("Frais de carte de 1000 FC encaissés avec succès !"); await actualiserInterface(); } 
             else { alert("Erreur lors du paiement : " + error.message); }
+        }
+        async function annulerDerniereOperationCompte(compteId) {
+            // Récupérer toutes les transactions de ce compte triées par ID décroissant (la plus récente en premier)
+            const txsCompte = db.transactions
+                .filter(t => t.compte_id === compteId)
+                .sort((a, b) => b.id - a.id);
+
+            if (txsCompte.length === 0) {
+                return alert("Aucune opération récente à annuler pour ce client.");
+            }
+
+            let derniereTx = txsCompte[0];
+            let typeLabel = derniereTx.type === 'depot' ? 'Dépôt' : (derniereTx.type === 'emprunt' ? 'Emprunt' : 'Remboursement');
+            let montantFmt = safeNum(derniereTx.montant).toLocaleString('de-DE');
+
+            if (!confirm(`⚠️ Voulez-vous vraiment annuler la dernière opération de ce client ?\n\n- Type : ${typeLabel}\n- Montant : ${montantFmt} FC\n- Date : ${derniereTx.date || 'N/A'}`)) {
+                return;
+            }
+
+            // Exécuter la suppression de la dernière transaction via la fonction de mutation (gère le mode en ligne et hors ligne/IndexedDB)
+            const { error } = await executeMutation('transactions', 'delete', null, 'id', derniereTx.id);
+
+            if (error) {
+                alert("Erreur lors de l'annulation : " + error.message);
+            } else {
+                showNotification("Dernière opération annulée avec succès !", "warning");
+                await actualiserInterface();
+            }
         }
 
         function declarerCartePerdue(compteId) {

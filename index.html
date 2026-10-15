@@ -920,14 +920,22 @@ function renderComptes() {
             const pageItems = comptesActifs.slice((currentPage - 1) * itemsPerPage, ((currentPage - 1) * itemsPerPage) + itemsPerPage);
 
             pageItems.forEach(c => {
-                let stats = calculerStatsCompte(c.id); let capaciteMax = safeNum(c.montant_initial) * 31; let isPlein = stats.totalDepots >= capaciteMax;
-                let tr = document.createElement('tr'); tr.style.cursor = "pointer"; tr.onclick = () => ouvrirCarteModal(c.id);
+                let stats = calculerStatsCompte(c.id); 
+                let capaciteMax = safeNum(c.montant_initial) * 31; 
+                let isPlein = stats.totalDepots >= capaciteMax;
+                
+                // Déterminer le symbole de la devise (par défaut 'FC' si non renseigné)
+                let devise = c.devise || 'FC';
+
+                let tr = document.createElement('tr'); 
+                tr.style.cursor = "pointer"; 
+                tr.onclick = () => ouvrirCarteModal(c.id);
                 tr.innerHTML = `
                     <td style="color:var(--texte-blanc); font-weight:700;">${genererIdentifiantClient(c.id)}</td>
                     <td>${c.prenom}</td><td><strong>${c.nom}</strong></td><td>${c.adresse}</td>
-                    <td>${safeNum(c.montant_initial).toLocaleString('de-DE')} FC</td>
-                    <td class="${isPlein ? 'val-dette' : 'val-depot'}">+ ${stats.totalDepots.toLocaleString('de-DE')} FC</td>
-                    <td class="val-dette">- ${stats.totalPrets.toLocaleString('de-DE')} FC</td>
+                    <td>${safeNum(c.montant_initial).toLocaleString('de-DE')} ${devise}</td>
+                    <td class="${isPlein ? 'val-dette' : 'val-depot'}">+ ${stats.totalDepots.toLocaleString('de-DE')} ${devise}</td>
+                    <td class="val-dette">- ${stats.totalPrets.toLocaleString('de-DE')} ${devise}</td>
                     <td>${c.carte_payee ? '<span class="badge badge-success">Payée</span>' : '<span class="badge badge-danger">Non Payée</span>'}</td>
                     <td>
                         <div class="action-icons" onclick="event.stopPropagation();">
@@ -946,27 +954,54 @@ function renderComptes() {
             tbody.appendChild(paginationRow);
         }
 
-        function ouvrirModalCompte() {
-            document.getElementById('modalTitle').innerText = "Créer un nouveau compte";
-            document.getElementById('modalBody').innerHTML = `
-                <div class="form-group"><label>Prénom</label><input type="text" id="newComptePrenom" required></div>
-                <div class="form-group"><label>Nom</label><input type="text" id="newCompteNom" required></div>
-                <div class="form-group"><label>Adresse</label><input type="text" id="newCompteAdresse" required></div>
-                <div class="form-group"><label>Montant Initial (FC)</label><input type="text" id="newCompteMontant" class="input-montant" oninput="formatMontantInput(this)" required></div>
-            `;
-            let btn = document.getElementById('modalConfirmBtn');
-            btn.style.display = 'block'; btn.style.backgroundColor = "var(--vert-finance)"; btn.innerText = "Valider l'opération";
-            btn.onclick = async () => {
-                let prenom = document.getElementById('newComptePrenom').value.trim(); let nom = document.getElementById('newCompteNom').value.trim();
-                let adresse = document.getElementById('newCompteAdresse').value.trim(); let montant = safeNum(document.getElementById('newCompteMontant').value);
-                if(!prenom || !nom || montant <= 0) return alert("Remplissez tout correctement.");
-                btnEnTraitement();
-                const { error } = await executeMutation('comptes', 'insert', { prenom, nom, adresse, montant_initial: montant, statut: 'actif', carte_payee: false, date: new Date().toISOString().split('T')[0] });
-                if(error) { btnPret(); alert("Erreur : " + error.message); } 
-                else { fermerModal(); await actualiserInterface(); }
-            };
-            document.getElementById('actionModal').style.display = 'flex';
-        }
+       function ouvrirModalCompte() {
+    document.getElementById('modalTitle').innerText = "Créer un nouveau compte";
+    document.getElementById('modalBody').innerHTML = `
+        <div class="form-group"><label>Prénom</label><input type="text" id="newComptePrenom" required></div>
+        <div class="form-group"><label>Nom</label><input type="text" id="newCompteNom" required></div>
+        <div class="form-group"><label>Adresse</label><input type="text" id="newCompteAdresse" required></div>
+        
+        <!-- 👈 LIGNE COMBINÉE MONTANT INITIAL & DEVISE -->
+        <div class="form-group">
+            <label>Montant initial & Devise</label>
+            <div style="display: flex; gap: 10px;">
+                <input type="text" id="newCompteMontant" class="input-montant" oninput="formatMontantInput(this)" placeholder="00.000" style="flex: 2; margin-top: 0;" required>
+                <select id="newCompteDevise" class="filter-input" style="flex: 1; height: auto;">
+                    <option value="FC" selected>FC</option>
+                    <option value="$">$</option>
+                </select>
+            </div>
+        </div>
+    `;
+    
+    let btn = document.getElementById('modalConfirmBtn');
+    btn.style.display = 'block'; btn.style.backgroundColor = "var(--vert-finance)"; btn.innerText = "Valider l'opération";
+    btn.onclick = async () => {
+        let prenom = document.getElementById('newComptePrenom').value.trim(); 
+        let nom = document.getElementById('newCompteNom').value.trim();
+        let adresse = document.getElementById('newCompteAdresse').value.trim(); 
+        let devise = document.getElementById('newCompteDevise').value;
+        let montant = safeNum(document.getElementById('newCompteMontant').value);
+        
+        if(!prenom || !nom || montant <= 0) return alert("Remplissez tout correctement.");
+        btnEnTraitement();
+        
+        const { error } = await executeMutation('comptes', 'insert', { 
+            prenom, 
+            nom, 
+            adresse, 
+            devise: devise, 
+            montant_initial: montant, 
+            statut: 'actif', 
+            carte_payee: false, 
+            date: new Date().toISOString().split('T')[0] 
+        });
+        
+        if(error) { btnPret(); alert("Erreur : " + error.message); } 
+        else { fermerModal(); await actualiserInterface(); }
+    };
+    document.getElementById('actionModal').style.display = 'flex';
+}
 
         function ouvrirModalModificationCompte(compteId) {
             const compte = db.comptes.find(c => c.id === compteId);
@@ -1123,21 +1158,26 @@ function renderComptes() {
         function chargerCartePhysique(compteId) {
             const compte = db.comptes.find(c => c.id === compteId);
             if (!compte) return;
+            const devise = compte.devise || 'FC'; // ✅ Corrigé ici
+            
             const stats = calculerStatsCompte(compteId);
             const mntInitial = safeNum(compte.montant_initial);
             const identifiant = genererIdentifiantClient(compte.id);
             const txDepots = db.transactions.filter(t => t.compte_id === compteId && t.type === 'depot').sort((a, b) => a.id - b.id);
             let boxColors = Array(31).fill(null); let currentBoxIndex = 0;
+            
             txDepots.forEach((tx, depositIndex) => {
                 const colorClass = (depositIndex % 2 === 0) ? 'filled-blue' : 'filled-red';
                 const nbCasesPourCeDepot = Math.floor(safeNum(tx.montant) / mntInitial);
                 for (let i = 0; i < nbCasesPourCeDepot; i++) { if (currentBoxIndex < 31) { boxColors[currentBoxIndex] = colorClass; currentBoxIndex++; } }
             });
+            
             let boxesHtml = "";
             for (let i = 1; i <= 31; i++) {
                 let colorClass = boxColors[i - 1] || "";
-                boxesHtml += `<div class="card-box ${colorClass}"><span class="box-num">${i}</span><span class="box-stamp"><i class="fa-solid fa-check"></i></span><span class="box-label">${mntInitial.toLocaleString('de-DE')}</span></div>`;
+                boxesHtml += `<div class="card-box ${colorClass}"><span class="box-num">${i}</span><span class="box-stamp"><i class="fa-solid fa-check"></i></span><span class="box-label">${mntInitial.toLocaleString('de-DE')} ${devise}</span></div>`;
             }
+            
             let bodyHtml = `
                 <div class="card-header-top">
                     <div class="card-logo-area">
@@ -1149,17 +1189,17 @@ function renderComptes() {
                         <div>ID: <strong>${identifiant}</strong></div>
                         <div>Client: <strong>${compte.prenom} ${compte.nom}</strong></div>
                         <div>Adresse: <strong>${compte.adresse}</strong></div>
-                        <div>Initial: <strong>${mntInitial.toLocaleString('de-DE')} FC</strong></div>
+                        <div>Initial: <strong>${mntInitial.toLocaleString('de-DE')} ${devise}</strong></div>
                     </div>
                 </div>
                 <div class="card-grid-31">${boxesHtml}</div>
                 <div class="card-footer-summary">
-                    <div>Total Dépôts: <strong class="val-depot">${stats.totalDepots.toLocaleString('de-DE')} FC</strong></div>
-                    <div>Emprunt/Dette: <strong class="val-dette">${stats.totalPrets.toLocaleString('de-DE')} FC</strong></div>
+                    <div>Total Dépôts: <strong class="val-depot">${stats.totalDepots.toLocaleString('de-DE')} ${devise}</strong></div>
+                    <div>Emprunt/Dette: <strong class="val-dette">${stats.totalPrets.toLocaleString('de-DE')} ${devise}</strong></div>
                     <div>Frais Carte: <strong>${compte.carte_payee ? 'PAYÉE (1000 FC)' : 'NON PAYÉE'}</strong></div>
                     <div>Cartes Perdues: <strong style="color:var(--rouge-dette);">${compte.carte_perdue_count || 0}</strong></div>
                 </div>
-              <div class="card-action-panel">
+                <div class="card-action-panel">
                     <button style="background:var(--vert-finance); color:white;" onclick="ouvrirModalTransaction(${compte.id}, 'depot',${currentBoxIndex >= 31})"><i class="fa-solid fa-plus"></i> Dépôt</button>
                     <button style="background:var(--rouge-dette); color:white;" onclick="ouvrirModalTransaction(${compte.id}, 'emprunt', false)"><i class="fa-solid fa-hand-holding-dollar"></i> Emprunt / Remboursement</button>
                     <button style="background:var(--bleu-accent); color:white;" onclick="ouvrirModalModificationCompte(${compte.id})"><i class="fa-solid fa-pen-to-square"></i> Corriger</button>
@@ -1170,7 +1210,6 @@ function renderComptes() {
             `;
             document.getElementById('cardModalBody').innerHTML = bodyHtml;
         }
-
         async function payerFraisCarte(compteId) {
             btnEnTraitement();
             const { error } = await executeMutation('comptes', 'update', { carte_payee: true }, 'id', compteId);

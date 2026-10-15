@@ -355,31 +355,42 @@ body.is-admin #adminCircleContainer {
 
             <main class="main-content">
                
-                <section id="page-dashboard" class="page-section active">
-                    <h2 class="section-title">Aperçu Financier Global</h2>
-                    <p class="section-subtitle">Ces indicateurs représentent le total cumulé</p>
-                    <div class="stats-grid">
-                        <div class="stat-card"><div class="stat-value val-depot" id="stat-depots">0 FC</div><div class="stat-label">Total Dépôts Entrants</div></div>
-                        <div class="stat-card"><div class="stat-value val-dette" id="stat-prets">0 FC</div><div class="stat-label">Total Prêts Sortants (Dette)</div></div>
-                        <!-- ✅ NOUVELLE CARTE : TOTAL SORTIES -->
-                        <div class="stat-card"><div class="stat-value" style="color:var(--rouge-dette);" id="stat-total-sortie">0 FC</div><div class="stat-label">Total Sorties</div></div>
-                        <div class="stat-card"><div class="stat-value" style="color:var(--bleu-accent);" id="stat-cartes">0 FC</div><div class="stat-label">Total Recettes Cartes (1000)</div></div>
-                        <div class="stat-card"><div class="stat-value" style="color:var(--violet-init);" id="stat-initial">0 FC</div><div class="stat-label">Total Montant Initial Actif</div></div>
-                        <div class="stat-card"><div class="stat-value" style="color:var(--vert-finance);" id="stat-caisse">0 FC</div><div class="stat-label">Caisse Réelle Restante</div></div>
-                    </div>
-                    <div class="chart-header">
-                        <h3>Courbe d'Évolution (Dépôts, Dettes, Caisse)</h3>
-                        <select id="chartPeriodFilter" class="filter-input" onchange="renderEvolutionChart()">
-                            <option value="7">7 derniers jours</option>
-                            <option value="30" selected>30 derniers jours</option>
-                            <option value="90">3 derniers mois</option>
-                            <option value="all">Depuis le début</option>
-                        </select>
-                    </div>
-                    <div class="chart-wrapper"><canvas id="evolutionChart"></canvas></div>
-                </section>
+        <section id="page-dashboard" class="page-section active">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 24px;">
+                <div>
+                    <h2 class="section-title" style="margin-bottom: 5px;">Aperçu Financier Global</h2>
+                    <p class="section-subtitle" style="margin-bottom: 0;">Ces indicateurs représentent le total cumulé</p>
+                </div>
+                <!-- 👈 SÉLECTEUR DE DEVISE GLOBAL -->
+                <div style="display: flex; align-items: center; gap: 10px; background-color: var(--bg-navigation); padding: 8px 15px; border-radius: 12px; border: 1px solid var(--border-couleur);">
+                    <label for="globalCurrencySelector" style="font-size: 13px; color: var(--texte-gris); font-weight: 600;"><i class="fa-solid fa-coins"></i> Afficher en :</label>
+                    <select id="globalCurrencySelector" class="filter-input" style="padding: 6px 12px; width: auto; font-weight: bold; cursor: pointer;" onchange="renderInventaire(); renderEvolutionChart();">
+                        <option value="FC" selected>Franc Congolais (FC)</option>
+                        <option value="$">Dollar ($)</option>
+                    </select>
+            </div>
 
-<section id="page-comptes" class="page-section">
+            <div class="stats-grid">
+                <div class="stat-card"><div class="stat-value val-depot" id="stat-depots">0 FC</div><div class="stat-label">Total Dépôts Entrants</div></div>
+                <div class="stat-card"><div class="stat-value val-dette" id="stat-prets">0 FC</div><div class="stat-label">Total Prêts Sortants (Dette)</div></div>
+                <div class="stat-card"><div class="stat-value" style="color:var(--rouge-dette);" id="stat-total-sortie">0 FC</div><div class="stat-label">Total Sorties</div></div>
+                <div class="stat-card"><div class="stat-value" style="color:var(--bleu-accent);" id="stat-cartes">0 FC</div><div class="stat-label">Total Recettes Cartes (1000)</div></div>
+                <div class="stat-card"><div class="stat-value" style="color:var(--violet-init);" id="stat-initial">0 FC</div><div class="stat-label">Total Montant Initial Actif</div></div>
+                <div class="stat-card"><div class="stat-value" style="color:var(--vert-finance);" id="stat-caisse">0 FC</div><div class="stat-label">Caisse Réelle Restante</div></div>
+            </div>
+            <div class="chart-header">
+                <h3>Courbe d'Évolution (Dépôts, Dettes, Caisse)</h3>
+                <select id="chartPeriodFilter" class="filter-input" onchange="renderEvolutionChart()">
+                    <option value="7">7 derniers jours</option>
+                    <option value="30" selected>30 derniers jours</option>
+                    <option value="90">3 derniers mois</option>
+                    <option value="all">Depuis le début</option>
+                </select>
+            </div>
+            <div class="chart-wrapper"><canvas id="evolutionChart"></canvas></div>
+        </section>
+
+            <section id="page-comptes" class="page-section">
                     <h2 class="section-title">Comptes Clients & Opérations</h2>
                     <div class="action-bar">
                         <button class="add-btn" onclick="ouvrirModalCompte()"><i class="fa-solid fa-plus"></i> Créer nouveau compte</button>
@@ -468,6 +479,13 @@ body.is-admin #adminCircleContainer {
                         <div class="filter-control" id="ctrl-day" style="display:none;"><label>Choisir le jour</label><input type="date" id="filterDay" class="filter-input" onchange="actualiserInterface()"></div>
                         <div class="filter-control" id="ctrl-month" style="display:none;"><label>Choisir le mois</label><input type="month" id="filterMonth" class="filter-input" onchange="actualiserInterface()"></div>
                         <div class="filter-control" id="ctrl-year" style="display:none;"><label>Saisir l'année</label><input type="number" id="filterYear" class="filter-input" min="2000" max="2100" placeholder="Ex: 2026" oninput="actualiserInterface()"></div>
+                        <div class="filter-control" style="max-width: 150px;">
+                            <label>Afficher en</label>
+                            <select id="historiqueCurrencySelector" class="filter-input" onchange="actualiserInterface()">
+                                <option value="FC" selected>Franc Congolais (FC)</option>
+                                <option value="$">Dollar ($)</option>
+                            </select>
+                        </div>
                         <div class="filter-control search-ctrl"><label>Rechercher une opération</label><input type="text" id="searchHistorique" class="filter-input" placeholder="🔍 Rechercher (ID, Client, Type...)" oninput="rechercherHistorique()"></div>
                     </div>
                     <div class="stats-grid">
@@ -802,62 +820,130 @@ body.is-admin #adminCircleContainer {
             if (selectedCompteId && document.getElementById('cardModal').style.display === 'flex') { chargerCartePhysique(selectedCompteId); }
         }
 
-        /* =============================================================
-           ✅ NOUVELLE FORMULE :
-             Total Sorties = Total Dépôts − Total Solde Rendu − Total Dettes
+/* =============================================================
+           ✅ FONCTION DE CONVERSION ET FORMATAGE DYNAMIQUE
            ============================================================= */
-        function renderInventaire() {
-            // ===== DASHBOARD GLOBAL (cumulé) =====
-            let totalDepots = db.transactions.filter(t => t.type === 'depot').reduce((a, b) => a + safeNum(b.montant), 0);
-            let totalPrets = db.transactions.filter(t => t.type === 'emprunt').reduce((a, b) => a + safeNum(b.montant), 0) - db.transactions.filter(t => t.type === 'remboursement').reduce((a, b) => a + safeNum(b.montant), 0);
-            totalPrets = Math.max(0, totalPrets);
-            let cartesPayeesActifs = db.comptes.filter(c => c.statut === 'actif' && c.carte_payee).length;
-            let cartesPayeesClotures = db.comptes.filter(c => c.statut === 'corbeille').length; 
-            let revenusCartes = (cartesPayeesActifs + cartesPayeesClotures) * 1000;
-            let totalInitiaux = db.comptes.filter(c => c.statut === 'actif').reduce((a, b) => a + safeNum(b.montant_initial), 0);
-            let totalSoldeRenduGlobal = calculerTotalSoldeRendu(db.comptes);
+        function formaterMontantGlobal(montantEnFC) {
+            const deviseChoisie = document.getElementById('globalCurrencySelector')?.value || 'FC';
+            const taux = safeNum(document.getElementById('tauxConversionInput')?.value) || 2800; // Taux par défaut modifiable
 
-            // ✅ NOUVELLE FORMULE
-            let totalSortiesGlobal = totalSoldeRenduGlobal + totalPrets;
-            // Caisse = Dépôts − Dettes − Initiaux − Solde Rendu (formule déjà corrigée précédemment)
-            let caisse = totalDepots - totalPrets - totalInitiaux - totalSoldeRenduGlobal;
-
-            document.getElementById('stat-depots').innerText = totalDepots.toLocaleString('de-DE') + " FC"; 
-            document.getElementById('stat-prets').innerText = totalPrets.toLocaleString('de-DE') + " FC";
-            document.getElementById('stat-total-sortie').innerText = totalSortiesGlobal.toLocaleString('de-DE') + " FC";
-            document.getElementById('stat-cartes').innerText = revenusCartes.toLocaleString('de-DE') + " FC"; 
-            document.getElementById('stat-initial').innerText = totalInitiaux.toLocaleString('de-DE') + " FC"; 
-            document.getElementById('stat-caisse').innerText = caisse.toLocaleString('de-DE') + " FC";
-
-            // ===== HISTORIQUE (filtré par période) =====
-            let filteredTxs = db.transactions.filter(t => verifierFiltreDate(t.date)); 
-            let filteredComptes = db.comptes.filter(c => verifierFiltreDate(c.date));
-            let fTotalDepots = filteredTxs.filter(t => t.type === 'depot').reduce((a, b) => a + safeNum(b.montant), 0);
-            let fTotalPrets = filteredTxs.filter(t => t.type === 'emprunt').reduce((a, b) => a + safeNum(b.montant), 0) - filteredTxs.filter(t => t.type === 'remboursement').reduce((a, b) => a + safeNum(b.montant), 0);
-            fTotalPrets = Math.max(0, fTotalPrets);
-            let fTotalInitiaux = filteredComptes.filter(c => c.statut === 'actif').reduce((a, b) => a + safeNum(b.montant_initial), 0);
-            let fTotalSoldeRendu = calculerTotalSoldeRendu(filteredComptes);
-
-            // ✅ NOUVELLE FORMULE (filtrée)
-            let fTotalSorties =  fTotalSoldeRendu + fTotalPrets;
-            // Caisse = Dépôts − Dettes − Initiaux − Solde Rendu
-            let fCaisse = fTotalDepots - fTotalPrets - fTotalInitiaux - fTotalSoldeRendu;
-
-            document.getElementById('gl-stat-total-sortie').innerText = fTotalSorties.toLocaleString('de-DE') + " FC";
-            document.getElementById('gl-stat-depots').innerText = fTotalDepots.toLocaleString('de-DE') + " FC"; 
-            document.getElementById('gl-stat-prets').innerText = fTotalPrets.toLocaleString('de-DE') + " FC";
-            document.getElementById('gl-stat-initial').innerText = fTotalInitiaux.toLocaleString('de-DE') + " FC"; 
-            document.getElementById('gl-stat-caisse').innerText = fCaisse.toLocaleString('de-DE') + " FC"; 
-            document.getElementById('gl-stat-solde-rendu').innerText = fTotalSoldeRendu.toLocaleString('de-DE') + " FC";
+            if (deviseChoisie === '$') {
+                let montantEnDollar = montantEnFC / taux;
+                return montantEnDollar.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " $";
+            } else {
+                return montantEnFC.toLocaleString('de-DE') + " FC";
+            }
         }
 
+        function renderInventaire() {
+            const taux = safeNum(document.getElementById('tauxConversionInput')?.value) || 2800;
+
+            // Séparer les comptes actifs par devise
+            let comptesFC = db.comptes.filter(c => c.statut === 'actif' && (!c.devise || c.devise === 'FC'));
+            let comptesUSD = db.comptes.filter(c => c.statut === 'actif' && c.devise === '$');
+
+            // --- CALCULS EN FRANCS CONGOLAIS (FC) ---
+            let idsFC = comptesFC.map(c => c.id);
+            let txsFC = db.transactions.filter(t => idsFC.includes(t.compte_id));
+            
+            let totalDepotsFC = txsFC.filter(t => t.type === 'depot').reduce((a, b) => a + safeNum(b.montant), 0);
+            let totalPretsFC = txsFC.filter(t => t.type === 'emprunt').reduce((a, b) => a + safeNum(b.montant), 0) - txsFC.filter(t => t.type === 'remboursement').reduce((a, b) => a + safeNum(b.montant), 0);
+            totalPretsFC = Math.max(0, totalPretsFC);
+            let totalInitiauxFC = comptesFC.reduce((a, b) => a + safeNum(b.montant_initial), 0);
+            let totalSoldeRenduFC = db.comptes.filter(c => c.statut === 'corbeille' && (!c.devise || c.devise === 'FC')).reduce((sum, c) => {
+                let stats = calculerStatsCompte(c.id);
+                return sum + (stats.totalDepots - stats.totalPrets - safeNum(c.montant_initial) - (c.carte_payee ? 0 : 1000));
+            }, 0);
+            let totalSortiesFC = totalSoldeRenduFC + totalPretsFC;
+            let caisseFC = totalDepotsFC - totalPretsFC - totalInitiauxFC - totalSoldeRenduFC;
+            let cartesFC = (comptesFC.filter(c => c.carte_payee).length + db.comptes.filter(c => c.statut === 'corbeille' && (!c.devise || c.devise === 'FC')).length) * 1000;
+
+            // --- CALCULS EN DOLLARS AMÉRICAINS ($) ---
+            let idsUSD = comptesUSD.map(c => c.id);
+            let txsUSD = db.transactions.filter(t => idsUSD.includes(t.compte_id));
+
+            let totalDepotsUSD = txsUSD.filter(t => t.type === 'depot').reduce((a, b) => a + safeNum(b.montant), 0);
+            let totalPretsUSD = txsUSD.filter(t => t.type === 'emprunt').reduce((a, b) => a + safeNum(b.montant), 0) - txsUSD.filter(t => t.type === 'remboursement').reduce((a, b) => a + safeNum(b.montant), 0);
+            totalPretsUSD = Math.max(0, totalPretsUSD);
+            let totalInitiauxUSD = comptesUSD.reduce((a, b) => a + safeNum(b.montant_initial), 0);
+            let totalSoldeRenduUSD = db.comptes.filter(c => c.statut === 'corbeille' && c.devise === '$').reduce((sum, c) => {
+                let stats = calculerStatsCompte(c.id);
+                // Si les frais de carte en $ sont gérés ou convertis, adaptez si besoin (ici on garde la logique de base)
+                return sum + (stats.totalDepots - stats.totalPrets - safeNum(c.montant_initial));
+            }, 0);
+            let totalSortiesUSD = totalSoldeRenduUSD + totalPretsUSD;
+            let caisseUSD = totalDepotsUSD - totalPretsUSD - totalInitiauxUSD - totalSoldeRenduUSD;
+            // Pour les cartes en USD, si les frais restent en FC (1000 FC convertis en $) ou gérés à part :
+            let cartesUSD = ((comptesUSD.filter(c => c.carte_payee).length + db.comptes.filter(c => c.statut === 'corbeille' && c.devise === '$').length) * 1000) / taux;
+
+            // --- AFFICHAGE SELON LA DEVISE SÉLECTIONNÉE DANS LE DASHBOARD ---
+            const deviseChoisie = document.getElementById('globalCurrencySelector')?.value || 'FC';
+
+            if (deviseChoisie === '$') {
+                document.getElementById('stat-depots').innerText = totalDepotsUSD.toLocaleString('de-DE', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + " $"; 
+                document.getElementById('stat-prets').innerText = totalPretsUSD.toLocaleString('de-DE', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + " $";
+                document.getElementById('stat-total-sortie').innerText = totalSortiesUSD.toLocaleString('de-DE', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + " $";
+                document.getElementById('stat-cartes').innerText = cartesUSD.toLocaleString('de-DE', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + " $"; 
+                document.getElementById('stat-initial').innerText = totalInitiauxUSD.toLocaleString('de-DE', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + " $"; 
+                document.getElementById('stat-caisse').innerText = caisseUSD.toLocaleString('de-DE', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + " $";
+            } else {
+                document.getElementById('stat-depots').innerText = totalDepotsFC.toLocaleString('de-DE') + " FC"; 
+                document.getElementById('stat-prets').innerText = totalPretsFC.toLocaleString('de-DE') + " FC";
+                document.getElementById('stat-total-sortie').innerText = totalSortiesFC.toLocaleString('de-DE') + " FC";
+                document.getElementById('stat-cartes').innerText = cartesFC.toLocaleString('de-DE') + " FC"; 
+                document.getElementById('stat-initial').innerText = totalInitiauxFC.toLocaleString('de-DE') + " FC"; 
+                document.getElementById('stat-caisse').innerText = caisseFC.toLocaleString('de-DE') + " FC";
+            }
+
+            // ===== HISTORIQUE (filtré par période) =====
+          const deviseHistChoisie = document.getElementById('historiqueCurrencySelector')?.value || 'FC';
+
+            let filteredTxs = db.transactions.filter(t => verifierFiltreDate(t.date)); 
+            let filteredComptes = db.comptes.filter(c => verifierFiltreDate(c.date));
+            
+            // Si on affiche en $, on filtre/calcule sur les comptes en $ de la période, sinon en FC
+            let fComptesDevise = filteredComptes.filter(c => deviseHistChoisie === '$' ? c.devise === '$' : (!c.devise || c.devise === 'FC'));
+            let fIdsDevise = fComptesDevise.map(c => c.id);
+            let fTxsDevise = filteredTxs.filter(t => fIdsDevise.includes(t.compte_id));
+
+            let fTotalDepots = fTxsDevise.filter(t => t.type === 'depot').reduce((a, b) => a + safeNum(b.montant), 0);
+            let fTotalPrets = fTxsDevise.filter(t => t.type === 'emprunt').reduce((a, b) => a + safeNum(b.montant), 0) - fTxsDevise.filter(t => t.type === 'remboursement').reduce((a, b) => a + safeNum(b.montant), 0);
+            fTotalPrets = Math.max(0, fTotalPrets);
+            let fTotalInitiaux = fComptesDevise.filter(c => c.statut === 'actif').reduce((a, b) => a + safeNum(b.montant_initial), 0);
+            let fTotalSoldeRendu = fComptesDevise.filter(c => c.statut === 'corbeille').reduce((sum, c) => {
+                let stats = calculerStatsCompte(c.id);
+                return sum + (stats.totalDepots - stats.totalPrets - safeNum(c.montant_initial));
+            }, 0);
+
+            let fTotalSorties = fTotalSoldeRendu + fTotalPrets;
+            let fCaisse = fTotalDepots - fTotalPrets - fTotalInitiaux - fTotalSoldeRendu;
+
+            let optionsFormat = deviseHistChoisie === '$' ? { minimumFractionDigits: 2, maximumFractionDigits: 2 } : {};
+
+            const elGlSortie = document.getElementById('gl-stat-total-sortie');
+            if (elGlSortie) elGlSortie.innerText = fTotalSorties.toLocaleString('de-DE', optionsFormat) + " " + deviseHistChoisie;
+            const elGlDepots = document.getElementById('gl-stat-depots');
+            if (elGlDepots) elGlDepots.innerText = fTotalDepots.toLocaleString('de-DE', optionsFormat) + " " + deviseHistChoisie; 
+            const elGlPrets = document.getElementById('gl-stat-prets');
+            if (elGlPrets) elGlPrets.innerText = fTotalPrets.toLocaleString('de-DE', optionsFormat) + " " + deviseHistChoisie;
+            const elGlInitial = document.getElementById('gl-stat-initial');
+            if (elGlInitial) elGlInitial.innerText = fTotalInitiaux.toLocaleString('de-DE', optionsFormat) + " " + deviseHistChoisie; 
+            const elGlCaisse = document.getElementById('gl-stat-caisse');
+            if (elGlCaisse) elGlCaisse.innerText = fCaisse.toLocaleString('de-DE', optionsFormat) + " " + deviseHistChoisie; 
+            const elGlRendu = document.getElementById('gl-stat-solde-rendu');
+            if (elGlRendu) elGlRendu.innerText = fTotalSoldeRendu.toLocaleString('de-DE', optionsFormat) + " " + deviseHistChoisie;
+         }
         function renderEvolutionChart() {
             const canvas = document.getElementById('evolutionChart'); if (!canvas) return;
             const ctx = canvas.getContext('2d'); const periodStr = document.getElementById('chartPeriodFilter').value;
+            const deviseChoisie = document.getElementById('globalCurrencySelector')?.value || 'FC';
+            const taux = safeNum(document.getElementById('tauxConversionInput')?.value) || 2800;
+
             let allDates = new Set(); db.transactions.forEach(t => { if(t.date) allDates.add(t.date) }); db.comptes.forEach(c => { if(c.date) allDates.add(c.date) });
             let datesTriees = Array.from(allDates).sort();
             let runningDepots = 0, runningPrets = 0, runningInitial = 0, runningCartes = 0, runningSoldeRendu = 0; 
             let chartData = [];
+
             datesTriees.forEach(date => {
                 let txsOnDate = db.transactions.filter(t => t.date === date); 
                 let comptesOnDate = db.comptes.filter(c => c.date === date);
@@ -875,28 +961,42 @@ body.is-admin #adminCircleContainer {
                     }, 0);
                 runningSoldeRendu += soldesRendusDuJour;
                 let caisseJour = runningDepots - runningPrets - runningInitial - runningSoldeRendu;
-                chartData.push({ date: date, depots: runningDepots, prets: runningPrets, initial: runningInitial, cartes: runningCartes, soldeRendu: runningSoldeRendu, caisse: caisseJour });
+
+                // Application de la conversion si le dollar est sélectionné
+                let diviseur = deviseChoisie === '$' ? taux : 1;
+
+                chartData.push({ 
+                    date: date, 
+                    depots: runningDepots / diviseur, 
+                    prets: runningPrets / diviseur, 
+                    initial: runningInitial / diviseur, 
+                    cartes: runningCartes / diviseur, 
+                    soldeRendu: runningSoldeRendu / diviseur, 
+                    caisse: caisseJour / diviseur 
+                });
             });
+
             let filteredData = chartData;
             if (periodStr !== 'all') { const days = parseInt(periodStr); const cutoffDate = new Date(); cutoffDate.setDate(cutoffDate.getDate() - days); filteredData = chartData.filter(d => d.date >= cutoffDate.toISOString().split('T')[0]); }
             let labels = filteredData.map(d => { let p = d.date.split('-'); return p.length===3 ? `${p[2]}/${p[1]}` : d.date; });
+
             if (evolutionChartInstance) { evolutionChartInstance.destroy(); }
             evolutionChartInstance = new Chart(ctx, {
                 type: 'line',
                 data: { labels: labels, datasets: [ 
-                    { label: 'Total Dépôts', data: filteredData.map(d => d.depots), borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', borderWidth: 2, fill: false, tension: 0.4, pointRadius: 3 }, 
-                    { label: 'Total Dettes', data: filteredData.map(d => d.prets), borderColor: '#ef4444', backgroundColor: 'rgba(239, 68, 68, 0.1)', borderWidth: 2, fill: false, tension: 0.4, pointRadius: 3 }, 
-                    { label: 'Solde Rendu', data: filteredData.map(d => d.soldeRendu), borderColor: '#b55fe6', backgroundColor: 'rgba(181, 95, 230, 0.1)', borderWidth: 2, fill: false, tension: 0.4, pointRadius: 3 },
-                    { label: 'Caisse Réelle', data: filteredData.map(d => d.caisse), borderColor: '#6366f1', backgroundColor: 'rgba(99, 102, 241, 0.1)', borderWidth: 3, fill: false, tension: 0.4, pointRadius: 4 } 
+                    { label: `Total Dépôts (${deviseChoisie})`, data: filteredData.map(d => d.depots), borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', borderWidth: 2, fill: false, tension: 0.4, pointRadius: 3 }, 
+                    { label: `Total Dettes (${deviseChoisie})`, data: filteredData.map(d => d.prets), borderColor: '#ef4444', backgroundColor: 'rgba(239, 68, 68, 0.1)', borderWidth: 2, fill: false, tension: 0.4, pointRadius: 3 }, 
+                    { label: `Solde Rendu (${deviseChoisie})`, data: filteredData.map(d => d.soldeRendu), borderColor: '#b55fe6', backgroundColor: 'rgba(181, 95, 230, 0.1)', borderWidth: 2, fill: false, tension: 0.4, pointRadius: 3 },
+                    { label: `Caisse Réelle (${deviseChoisie})`, data: filteredData.map(d => d.caisse), borderColor: '#6366f1', backgroundColor: 'rgba(99, 102, 241, 0.1)', borderWidth: 3, fill: false, tension: 0.4, pointRadius: 4 } 
                 ] },
                 options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, 
                     scales: { 
-                        y: { beginAtZero: true, grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#9ca3af', callback: function(value) { return value.toLocaleString('de-DE'); } } }, 
+                        y: { beginAtZero: true, grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#9ca3af', callback: function(value) { return value.toLocaleString('de-DE', { minimumFractionDigits: deviseChoisie === '$' ? 2 : 0, maximumFractionDigits: deviseChoisie === '$' ? 2 : 0 }) + ' ' + deviseChoisie; } } }, 
                         x: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#9ca3af' } } 
                     }, 
                     plugins: { 
                         legend: { position: 'bottom', labels: { color: '#f9fafb', usePointStyle: true, boxWidth: 8 } },
-                        tooltip: { callbacks: { label: function(context) { return context.dataset.label + ': ' + context.parsed.y.toLocaleString('de-DE') + ' FC'; } } }
+                        tooltip: { callbacks: { label: function(context) { return context.dataset.label + ': ' + context.parsed.y.toLocaleString('de-DE', { minimumFractionDigits: deviseChoisie === '$' ? 2 : 0, maximumFractionDigits: deviseChoisie === '$' ? 2 : 0 }) + ' ' + deviseChoisie; } } }
                     } 
                 }
             });
@@ -1032,7 +1132,11 @@ function renderComptes() {
             document.getElementById('actionModal').style.display = 'flex';
         }
 
-        function ouvrirModalTransaction(compteId, type, isPlein) {
+function ouvrirModalTransaction(compteId, type, isPlein) {
+            const compte = db.comptes.find(c => c.id === compteId);
+            if (!compte) return;
+            let devise = compte.devise || 'FC';
+
             if (type === 'depot' && isPlein) return alert("La carte est déjà pleine pour les dépôts.");
             let modalTitleText = "Nouveau Dépôt"; let optionTypeHtml = "";
             if (type === 'emprunt' || type === 'remboursement') {
@@ -1050,7 +1154,7 @@ function renderComptes() {
             document.getElementById('modalTitle').innerText = modalTitleText;
             document.getElementById('modalBody').innerHTML = `
                 ${optionTypeHtml}
-                <div class="form-group"><label>Montant (FC)</label><input type="text" id="txMontant" class="input-montant" oninput="formatMontantInput(this)" required></div>
+                <div class="form-group"><label>Montant (${devise})</label><input type="text" id="txMontant" class="input-montant" oninput="formatMontantInput(this)" required></div>
             `;
             let btn = document.getElementById('modalConfirmBtn');
             btn.style.display = 'block'; btn.style.backgroundColor = "var(--vert-finance)"; btn.innerText = "Valider l'opération";
@@ -1060,25 +1164,29 @@ function renderComptes() {
                 let selectedType = type;
                 let selectEl = document.getElementById('txTypeSelect');
                 if (selectEl) { selectedType = selectEl.value; }
+                
                 if (selectedType === 'depot') {
                     let stats = calculerStatsCompte(compteId);
-                    const compte = db.comptes.find(c => c.id === compteId);
-                    if (montant % safeNum(compte.montant_initial) !== 0) { return alert(`Dépôt refusé. Le montant doit être un multiple exact du montant initial (${safeNum(compte.montant_initial).toLocaleString('de-DE')} FC).`); }
+                    if (montant % safeNum(compte.montant_initial) !== 0) { return alert(`Dépôt refusé. Le montant doit être un multiple exact du montant initial (${safeNum(compte.montant_initial).toLocaleString('de-DE')} ${devise}).`); }
                     let capaciteMax = safeNum(compte.montant_initial) * 31;
-                    if ((stats.totalDepots + montant) > capaciteMax) { let reste = capaciteMax - stats.totalDepots; return alert(`Opération refusée. Le total des dépôts ne peut pas dépasser ${capaciteMax.toLocaleString('de-DE')} FC.\nVous ne pouvez déposer que ${reste.toLocaleString('de-DE')} FC au maximum.`); }
+                    if ((stats.totalDepots + montant) > capaciteMax) { let reste = capaciteMax - stats.totalDepots; return alert(`Opération refusée. Le total des dépôts ne peut pas dépasser ${capaciteMax.toLocaleString('de-DE')} ${devise}.\nVous ne pouvez déposer que ${reste.toLocaleString('de-DE')} ${devise} au maximum.`); }
                 }
+                
                 if (selectedType === 'remboursement') {
                     let stats = calculerStatsCompte(compteId);
                     if (stats.totalPrets <= 0) { return alert("Ce client n'a aucune dette en cours à rembourser."); }
-                    if (montant > stats.totalPrets) { return alert(`Le montant remboursé (${montant.toLocaleString('de-DE')} FC) dépasse la dette actuelle (${stats.totalPrets.toLocaleString('de-DE')} FC).`); }
+                    if (montant > stats.totalPrets) { return alert(`Le montant remboursé (${montant.toLocaleString('de-DE')} ${devise}) dépasse la dette actuelle (${stats.totalPrets.toLocaleString('de-DE')} ${devise}).`); }
                 }
+                
                 if (selectedType === 'emprunt') {
                     let stats = calculerStatsCompte(compteId);
-                    const compte = db.comptes.find(c => c.id === compteId);
                     let soldeRendu = stats.totalDepots - stats.totalPrets - safeNum(compte.montant_initial);
-                    if (!compte.carte_payee) { soldeRendu -= 1000; }
-                    if (montant >= soldeRendu) { return alert(`Opération refusée. Le montant de l'emprunt (${montant.toLocaleString('de-DE')} FC) doit être inférieur au rendu disponible de ce compte (${soldeRendu.toLocaleString('de-DE')} FC).`); }
+                    // Les 1000 FC de frais de carte ne bloquent plus l'emprunt au quotidien (ils s'appliquent uniquement lors du solde rendu en fin de parcours)
+                    if (montant >= soldeRendu && soldeRendu > 0) { 
+                        return alert(`Opération refusée. Le montant de l'emprunt (${montant.toLocaleString('de-DE')} ${devise}) doit être inférieur au rendu disponible de ce compte (${soldeRendu.toLocaleString('de-DE')} ${devise}).`); 
+                    }
                 }
+                
                 btnEnTraitement();
                 const { error } = await executeMutation('transactions', 'insert', { compte_id: compteId, type: selectedType, montant: montant, date: new Date().toISOString().split('T')[0], cree_par: document.getElementById('session-user-name').innerText });
                 if(error) { btnPret(); alert("Erreur : " + error.message); } 
@@ -1086,8 +1194,7 @@ function renderComptes() {
             };
             document.getElementById('actionModal').style.display = 'flex';
         }
-
-      function ouvrirModalCloture(compteId) {
+    function ouvrirModalCloture(compteId) {
     const compte = db.comptes.find(c => c.id === compteId);
     if (!compte) return;
     
@@ -1554,12 +1661,13 @@ function renderComptes() {
                 else if (t.type === 'emprunt') typeLabel = '<span class="badge badge-danger">Emprunt</span>';
                 else if (t.type === 'remboursement') typeLabel = '<span class="badge badge-success">Remboursement</span>';
                 let tr = document.createElement('tr');
-                tr.innerHTML = `<td>${t.date || '-'}</td><td style="font-weight:bold;">${clientCode}</td><td><strong>${clientNom}</strong></td><td>${typeLabel}</td><td style="font-weight:bold;">${safeNum(t.montant).toLocaleString('de-DE')} FC</td><td>${t.cree_par || 'Système'}</td>`;
-                tbody.appendChild(tr);
-            });
-            let paginationRow = document.createElement('tr');
-            paginationRow.innerHTML = `<td colspan="6" style="text-align:center; padding: 15px; border-bottom: none;"><button class="btn-cancel" style="width: auto; padding: 6px 14px; margin-right: 10px;" ${currentPageHistorique <= 1 ? 'disabled style="opacity:0.4; cursor:not-allowed;"' : ''} onclick="changerPageHistorique(-1)"><i class="fa-solid fa-chevron-left"></i> Précédent</button><span style="font-weight: bold; color: var(--texte-blanc);">Page ${currentPageHistorique} sur ${totalPages}</span><button class="btn-cancel" style="width: auto; padding: 6px 14px; margin-left: 10px;" ${currentPageHistorique >= totalPages ? 'disabled style="opacity:0.4; cursor:not-allowed;"' : ''} onclick="changerPageHistorique(1)">Suivant <i class="fa-solid fa-chevron-right"></i></button></td>`;
-            tbody.appendChild(paginationRow);
+                let deviseCompte = compte ? (compte.devise || 'FC') : 'FC';
+                let formatOpts = deviseCompte === '$' ? { minimumFractionDigits: 2, maximumFractionDigits: 2 } : {};
+                tr.innerHTML = `<td>${t.date || '-'}</td><td style="font-weight:bold;">${clientCode}</td><td><strong>${clientNom}</strong></td><td>${typeLabel}</td><td style="font-weight:bold;">${safeNum(t.montant).toLocaleString('de-DE', formatOpts)} ${deviseCompte}</td><td>${t.cree_par || 'Système'}</td>`;                tbody.appendChild(tr);
+                });
+                let paginationRow = document.createElement('tr');
+                paginationRow.innerHTML = `<td colspan="6" style="text-align:center; padding: 15px; border-bottom: none;"><button class="btn-cancel" style="width: auto; padding: 6px 14px; margin-right: 10px;" ${currentPageHistorique <= 1 ? 'disabled style="opacity:0.4; cursor:not-allowed;"' : ''} onclick="changerPageHistorique(-1)"><i class="fa-solid fa-chevron-left"></i> Précédent</button><span style="font-weight: bold; color: var(--texte-blanc);">Page ${currentPageHistorique} sur ${totalPages}</span><button class="btn-cancel" style="width: auto; padding: 6px 14px; margin-left: 10px;" ${currentPageHistorique >= totalPages ? 'disabled style="opacity:0.4; cursor:not-allowed;"' : ''} onclick="changerPageHistorique(1)">Suivant <i class="fa-solid fa-chevron-right"></i></button></td>`;
+                tbody.appendChild(paginationRow);
         }
 
 let archiveDonneesJson = [];
